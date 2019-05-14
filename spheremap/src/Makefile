@@ -11,10 +11,12 @@ LDFLAGS = `$(SDL_CONFIG) --libs` -lSDL_image -lm -lGL
 all: sphere
 
 main.o: main.c
+asciifont.o: asciifont.tga
+	objcopy -I binary -O elf64-x86-64 -B i386 $< $@
 
-sphere: main.o
+sphere: main.o asciifont.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f main.o sphere
+	rm -f main.o asciifont.o sphere
 

@@ -1,11 +1,11 @@
 /* -*- mode: c; coding: utf-8-unix -*- */
 /**
- * @file vector_inline.h
+ * @file   vector_inline.h
+ * @brief  Inline functions for operating 2d/3d vectors.
  *
- * Inline functions for operating 2d/3d vectors.
- *
+ * @author Naoyuki MORITA
  */
-/* $Id$ */
+
 #ifndef SPHEREMAP_VECTOR_INLINE_H_
 #define SPHEREMAP_VECTOR_INLINE_H_
 

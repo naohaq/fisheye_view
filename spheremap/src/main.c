@@ -1,9 +1,11 @@
 /* -*- mode: c; coding: utf-8-unix -*- */
 /**
  * @file main.c
- * 
+ *
+ * @author Naoyuki MORITA
+ *
  */
-/* $Id$ */
+
 
 #include <stdint.h>
 #include <stdio.h>

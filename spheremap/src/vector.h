@@ -1,10 +1,11 @@
 /* -*- mode: c; coding: utf-8-unix -*- */
 /**
- * @file vector.h
+ * @file   vector.h
+ * @brief  Vector(2d/3d) type definitions.
  *
- * Vector(2d/3d) type definitions.
+ * @author Naoyuki MORITA
  */
-/* $Id$ */
+
 #ifndef SPHEREMAP_VECTOR_H_
 #define SPHEREMAP_VECTOR_H_
 

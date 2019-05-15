@@ -34,9 +34,9 @@ static double s_lens_r  = 1024.0;
 static double s_lens_cx = 0.0;
 static double s_lens_cy = 0.0;
 
-extern const uint8_t _binary_asciifont_tga_start[];
-extern const uint8_t _binary_asciifont_tga_end[];
-extern const uint32_t _binary_asciifont_tga_size[];
+extern const uint8_t _binary_resource_asciifont_tga_start[];
+extern const uint8_t _binary_resource_asciifont_tga_end[];
+extern const uint32_t _binary_resource_asciifont_tga_size[];
 
 static lens_type_t
 toggle_lens_type(lens_type_t lens)
@@ -65,11 +65,11 @@ LoadFontImage( void )
 	GLuint tex_num;
 	SDL_Surface * fnt_img;
 	SDL_RWops * ops;
-	int imgsize = _binary_asciifont_tga_end - _binary_asciifont_tga_start;
+	int imgsize = _binary_resource_asciifont_tga_end - _binary_resource_asciifont_tga_start;
 
 	glGenTextures(1, &tex_num);
 
-	ops = SDL_RWFromConstMem(_binary_asciifont_tga_start, imgsize);
+	ops = SDL_RWFromConstMem(_binary_resource_asciifont_tga_start, imgsize);
 	if (ops != NULL) {
 		SDL_Surface * fnt_img;
 		fnt_img = IMG_LoadTGA_RW(ops);

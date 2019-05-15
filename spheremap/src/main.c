@@ -34,6 +34,10 @@ static double s_lens_r  = 1024.0;
 static double s_lens_cx = 0.0;
 static double s_lens_cy = 0.0;
 
+extern const uint8_t _binary_asciifont_tga_start[];
+extern const uint8_t _binary_asciifont_tga_end[];
+extern const uint32_t _binary_asciifont_tga_size[];
+
 static lens_type_t
 toggle_lens_type(lens_type_t lens)
 {
@@ -53,6 +57,50 @@ toggle_lens_type(lens_type_t lens)
 	}
 
 	return nxt_lens;
+}
+
+static GLuint
+LoadFontImage( void )
+{
+	GLuint tex_num;
+	SDL_Surface * fnt_img;
+	SDL_RWops * ops;
+	int imgsize = _binary_asciifont_tga_end - _binary_asciifont_tga_start;
+
+	glGenTextures(1, &tex_num);
+
+	ops = SDL_RWFromConstMem(_binary_asciifont_tga_start, imgsize);
+	if (ops != NULL) {
+		SDL_Surface * fnt_img;
+		fnt_img = IMG_LoadTGA_RW(ops);
+
+		if (fnt_img != NULL) {
+			SDL_Surface * tex_img = SDL_CreateRGBSurface(SDL_SWSURFACE, 512, 512, 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+
+			SDL_SetAlpha(fnt_img, 0, 255);
+
+			SDL_FillRect(tex_img, NULL, 0x00000000);
+
+			SDL_BlitSurface(fnt_img, NULL, tex_img, NULL);
+
+			glBindTexture(GL_TEXTURE_2D, tex_num);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_img->w, tex_img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_img->pixels);
+
+			SDL_FreeSurface(tex_img);
+			SDL_FreeSurface(fnt_img);
+		}
+		else {
+			fprintf(stderr, "IMG_Load_RW: %s\n", SDL_GetError( ));
+		}
+	}
+	else {
+		fprintf(stderr, "SDL_RWFromConstMem: %s\n", SDL_GetError( ));
+	}
+
+	return tex_num;
 }
 
 static GLuint
@@ -328,16 +376,19 @@ set_viewangle(double fovY, int32_t width, int32_t height)
 }
 
 static void
-draw_sphere(int32_t nstrips, int32_t vcnts[], vec3_t vertices[], vec2_t coords[])
+draw_sphere(GLuint tid, int32_t nstrips, int32_t vcnts[], vec3_t vertices[], vec2_t coords[])
 {
 	int32_t vc = 0;
 	int32_t i;
 
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBindTexture(GL_TEXTURE_2D, tid);
 	glVertexPointer(3, GL_DOUBLE, sizeof(double)*3, &vertices[0].x);
 	glTexCoordPointer(2, GL_DOUBLE, sizeof(double)*2, &coords[0].x);
-	glColor3f(1.0f, 1.0f, 1.0f);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	for (i=0; i<nstrips; i++) {
 		glDrawArrays(GL_TRIANGLE_STRIP, vc, vcnts[i]);
@@ -353,6 +404,7 @@ draw_wireframe(int32_t nstrips, int32_t wf_vcnts[], vec3_t wf_vtxs[])
 
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
 	glVertexPointer(3, GL_DOUBLE, sizeof(double)*3, &wf_vtxs[0].x);
 	glColor3f(0.0f, 1.0f, 0.0f);
 
@@ -376,6 +428,8 @@ main(int argc, char ** argv)
 	int32_t bpp = 0;
 	int32_t flags = 0;
 	double fovY = 45.0;
+	GLuint tid_sphere;
+	GLuint tid_font;
 
 	if (argc < 2) {
 		fprintf(stderr, "filename required.\n");
@@ -412,8 +466,9 @@ main(int argc, char ** argv)
 	glEnable(GL_TEXTURE_2D);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	
-	LoadTexture(argv[1]);
+
+	tid_sphere = LoadTexture(argv[1]);
+	tid_font   = LoadFontImage( );
 
 	{
 		vec3_t * vertices;
@@ -658,18 +713,45 @@ main(int argc, char ** argv)
 			{
 				Uint32 t = SDL_GetTicks( );
 
+				glEnableClientState(GL_VERTEX_ARRAY);
 				glLoadIdentity( );
 				glTranslatef(0.0f, 0.0f, depth);
 				glRotatef(yaw, 0.0f, 1.0f, 0.0f);
 				glRotatef(pitch, 1.0f, 0.0f, 0.0f);
 
 				if (wireframe) {
-					draw_sphere(nstrips, vcnts, vertices, coords);
+					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 					draw_wireframe(nstrips, wf_vcnts, wf_vtxs);
 				}
 				else {
-					draw_sphere(nstrips, vcnts, vertices, coords);
+					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 				}
+
+				glMatrixMode(GL_PROJECTION);
+				glPushMatrix( );
+				glLoadIdentity( );
+				glOrtho(-400.0,400.0,-300.0,300.0,1.0,100.0);
+
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity( );
+
+				glDisableClientState(GL_VERTEX_ARRAY);
+				glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+				glDisable(GL_TEXTURE_2D);
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+				glBegin(GL_TRIANGLE_STRIP);
+				glColor4f(0.0f, 0.0f, 0.0f, 0.75f);
+				glVertex3f(-390.0f, -200.0f, -2.0f);
+				glVertex3f(-390.0f, -290.0f, -2.0f);
+				glVertex3f( 390.0f, -200.0f, -2.0f);
+				glVertex3f( 390.0f, -290.0f, -2.0f);
+				glEnd( );
+
+				glMatrixMode(GL_PROJECTION);
+				glPopMatrix( );
+				glMatrixMode(GL_MODELVIEW);
 			}
 
 			frames++;

@@ -69,11 +69,57 @@ load_font_image( void )
 	return tex_num;
 }
 
+static void
+draw_char(GLfloat x, GLfloat y, int c)
+{
+	const GLfloat ts = 1.0/512.0;
+	const GLfloat tw = 11.0f;
+	const GLfloat th = 24.0f;
+	GLfloat tx0 = 10.0;
+	GLfloat ty0 = 0.0;
+
+	if (c >= 0x20 && c <= 0x7e) {
+		GLfloat txoff = (GLfloat)(c & 0x0f)*tw*2;
+		GLfloat tyoff = (GLfloat)(((c & 0x70) >> 4)-2)*th;
+		tx0 += txoff;
+		ty0 += tyoff;
+	}
+
+	glBegin(GL_TRIANGLE_STRIP);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+	glTexCoord2f(tx0*ts, ty0*ts);
+	glVertex3f(x, y, -2.0f);
+	glTexCoord2f(tx0*ts, (ty0+th)*ts);
+	glVertex3f(x, y-th, -2.0f);
+	glTexCoord2f((tx0+tw)*ts, ty0*ts);
+	glVertex3f(x+tw, y, -2.0f);
+	glTexCoord2f((tx0+tw)*ts, (ty0+th)*ts);
+	glVertex3f(x+tw, y-th, -2.0f);
+
+	glEnd( );
+}
+
+static int
+draw_string(GLfloat x, GLfloat y, const char * str)
+{
+	for (int32_t i=0; str[i] != 0; i+=1) {
+		draw_char(x + ((GLfloat)i)*12.0f, y, str[i]);
+	}
+}
+
 int
 draw_textwindow(GLuint tid)
 {
 	const GLdouble width  = (GLdouble)800;
 	const GLdouble height = (GLdouble)600;
+
+	const GLfloat ox = (GLfloat)-width*0.5+10.0 + 3.0;
+	const GLfloat oy = (GLfloat)-height*0.25 + 3.0;
+
+	const GLfloat tw = 11.0;
+	const GLfloat th = 24.0;
+	const GLfloat ts = 1.0/512;
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix( );
@@ -91,11 +137,15 @@ draw_textwindow(GLuint tid)
 
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor4f(0.0f, 0.0f, 0.0f, 0.75f);
-	glVertex3f((GLfloat)-width*0.5+10.0, (GLfloat)-height*0.25    , -2.0f);
-	glVertex3f((GLfloat)-width*0.5+10.0, (GLfloat)-height*0.5+10.0, -2.0f);
-	glVertex3f((GLfloat) width*0.5-10.0, (GLfloat)-height*0.25    , -2.0f);
-	glVertex3f((GLfloat) width*0.5-10.0, (GLfloat)-height*0.5+10.0, -2.0f);
+	glVertex3f((GLfloat)-width*0.5+10.0, (GLfloat)-height*0.25    , -5.0f);
+	glVertex3f((GLfloat)-width*0.5+10.0, (GLfloat)-height*0.5+10.0, -5.0f);
+	glVertex3f((GLfloat) width*0.5-10.0, (GLfloat)-height*0.25    , -5.0f);
+	glVertex3f((GLfloat) width*0.5-10.0, (GLfloat)-height*0.5+10.0, -5.0f);
 	glEnd( );
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, tid);
+	draw_string(ox, oy, "Equidistant.");
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix( );

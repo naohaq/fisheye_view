@@ -19,6 +19,7 @@
 typedef char char_t;
 
 #include "vector.h"
+#include "textwin.h"
 
 #ifndef M_PI
 #define M_PI (3.141592653589793238462643)
@@ -59,49 +60,6 @@ toggle_lens_type(lens_type_t lens)
 	return nxt_lens;
 }
 
-static GLuint
-LoadFontImage( void )
-{
-	GLuint tex_num;
-	SDL_Surface * fnt_img;
-	SDL_RWops * ops;
-	int imgsize = _binary_resource_asciifont_tga_end - _binary_resource_asciifont_tga_start;
-
-	glGenTextures(1, &tex_num);
-
-	ops = SDL_RWFromConstMem(_binary_resource_asciifont_tga_start, imgsize);
-	if (ops != NULL) {
-		SDL_Surface * fnt_img;
-		fnt_img = IMG_LoadTGA_RW(ops);
-
-		if (fnt_img != NULL) {
-			SDL_Surface * tex_img = SDL_CreateRGBSurface(SDL_SWSURFACE, 512, 512, 32, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
-
-			SDL_SetAlpha(fnt_img, 0, 255);
-
-			SDL_FillRect(tex_img, NULL, 0x00000000);
-
-			SDL_BlitSurface(fnt_img, NULL, tex_img, NULL);
-
-			glBindTexture(GL_TEXTURE_2D, tex_num);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_img->w, tex_img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_img->pixels);
-
-			SDL_FreeSurface(tex_img);
-			SDL_FreeSurface(fnt_img);
-		}
-		else {
-			fprintf(stderr, "IMG_Load_RW: %s\n", SDL_GetError( ));
-		}
-	}
-	else {
-		fprintf(stderr, "SDL_RWFromConstMem: %s\n", SDL_GetError( ));
-	}
-
-	return tex_num;
-}
 
 static GLuint
 LoadTexture(char_t * tex_name)
@@ -468,7 +426,7 @@ main(int argc, char ** argv)
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	tid_sphere = LoadTexture(argv[1]);
-	tid_font   = LoadFontImage( );
+	tid_font   = load_font_image( );
 
 	{
 		vec3_t * vertices;
@@ -566,7 +524,7 @@ main(int argc, char ** argv)
 							pitch = 0.0f;
 							last_yaw = 0.0f;
 							yaw = 0.0f;
-							lens = LENS_EQUISOLID;
+							lens = LENS_EQUIDISTANT;
 							update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
 							fovY = 45.0;
 							set_viewangle(fovY, width, height);
@@ -727,31 +685,7 @@ main(int argc, char ** argv)
 					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 				}
 
-				glMatrixMode(GL_PROJECTION);
-				glPushMatrix( );
-				glLoadIdentity( );
-				glOrtho(-400.0,400.0,-300.0,300.0,1.0,100.0);
-
-				glMatrixMode(GL_MODELVIEW);
-				glLoadIdentity( );
-
-				glDisableClientState(GL_VERTEX_ARRAY);
-				glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-				glDisable(GL_TEXTURE_2D);
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-				glBegin(GL_TRIANGLE_STRIP);
-				glColor4f(0.0f, 0.0f, 0.0f, 0.75f);
-				glVertex3f(-390.0f, -200.0f, -2.0f);
-				glVertex3f(-390.0f, -290.0f, -2.0f);
-				glVertex3f( 390.0f, -200.0f, -2.0f);
-				glVertex3f( 390.0f, -290.0f, -2.0f);
-				glEnd( );
-
-				glMatrixMode(GL_PROJECTION);
-				glPopMatrix( );
-				glMatrixMode(GL_MODELVIEW);
+				draw_textwindow(tid_font);
 			}
 
 			frames++;

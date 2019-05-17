@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
 #include <math.h>
 
 #include <SDL.h>
@@ -109,17 +111,17 @@ draw_string(GLfloat x, GLfloat y, const char * str)
 }
 
 int
-draw_textwindow(GLuint tid)
+draw_textwindow(GLuint tid, double lens_r, double lens_cx, double lens_cy)
 {
 	const GLdouble width  = (GLdouble)800;
 	const GLdouble height = (GLdouble)600;
 
-	const GLfloat ox = (GLfloat)-width*0.5+10.0 + 3.0;
-	const GLfloat oy = (GLfloat)-height*0.25 + 3.0;
-
-	const GLfloat tw = 11.0;
-	const GLfloat th = 24.0;
-	const GLfloat ts = 1.0/512;
+	const GLfloat x_left  = (GLfloat)-width *0.5 +  10.0;
+	const GLfloat x_right = (GLfloat) width *0.5 -  10.0;
+	const GLfloat y_top   = (GLfloat)-height*0.5 + 110.0;
+	const GLfloat y_bottom= (GLfloat)-height*0.5 +  10.0;
+	const GLfloat ox = x_left + 10.0;
+	const GLfloat oy = y_top  -  5.0;
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix( );
@@ -137,15 +139,23 @@ draw_textwindow(GLuint tid)
 
 	glBegin(GL_TRIANGLE_STRIP);
 	glColor4f(0.0f, 0.0f, 0.0f, 0.75f);
-	glVertex3f((GLfloat)-width*0.5+10.0, (GLfloat)-height*0.25    , -5.0f);
-	glVertex3f((GLfloat)-width*0.5+10.0, (GLfloat)-height*0.5+10.0, -5.0f);
-	glVertex3f((GLfloat) width*0.5-10.0, (GLfloat)-height*0.25    , -5.0f);
-	glVertex3f((GLfloat) width*0.5-10.0, (GLfloat)-height*0.5+10.0, -5.0f);
+	glVertex3f(x_left , y_top   , -5.0f);
+	glVertex3f(x_left , y_bottom, -5.0f);
+	glVertex3f(x_right, y_top   , -5.0f);
+	glVertex3f(x_right, y_bottom, -5.0f);
 	glEnd( );
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, tid);
-	draw_string(ox, oy, "Equidistant.");
+	{
+		char_t buf[128];
+		snprintf(buf, 128, "Center: % 6.1f, % 6.1f", lens_cx, lens_cy);
+		buf[127] = 0;
+		draw_string(ox, oy, buf);
+		snprintf(buf, 128, "Radius: %6.1f", lens_r);
+		buf[127] = 0;
+		draw_string(ox, oy-26.0f, buf);
+	}
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix( );

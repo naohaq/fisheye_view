@@ -685,7 +685,7 @@ main(int argc, char ** argv)
 					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 				}
 
-				draw_textwindow(tid_font);
+				draw_textwindow(tid_font, s_lens_r, s_lens_cx, s_lens_cy);
 			}
 
 			frames++;

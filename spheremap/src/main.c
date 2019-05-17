@@ -19,6 +19,7 @@
 typedef char char_t;
 
 #include "vector.h"
+#include "textwin.h"
 
 #ifndef M_PI
 #define M_PI (3.141592653589793238462643)
@@ -33,6 +34,10 @@ typedef enum {
 static double s_lens_r  = 1024.0;
 static double s_lens_cx = 0.0;
 static double s_lens_cy = 0.0;
+
+extern const uint8_t _binary_resource_asciifont_tga_start[];
+extern const uint8_t _binary_resource_asciifont_tga_end[];
+extern const uint32_t _binary_resource_asciifont_tga_size[];
 
 static lens_type_t
 toggle_lens_type(lens_type_t lens)
@@ -54,6 +59,7 @@ toggle_lens_type(lens_type_t lens)
 
 	return nxt_lens;
 }
+
 
 static GLuint
 LoadTexture(char_t * tex_name)
@@ -328,16 +334,19 @@ set_viewangle(double fovY, int32_t width, int32_t height)
 }
 
 static void
-draw_sphere(int32_t nstrips, int32_t vcnts[], vec3_t vertices[], vec2_t coords[])
+draw_sphere(GLuint tid, int32_t nstrips, int32_t vcnts[], vec3_t vertices[], vec2_t coords[])
 {
 	int32_t vc = 0;
 	int32_t i;
 
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBindTexture(GL_TEXTURE_2D, tid);
 	glVertexPointer(3, GL_DOUBLE, sizeof(double)*3, &vertices[0].x);
 	glTexCoordPointer(2, GL_DOUBLE, sizeof(double)*2, &coords[0].x);
-	glColor3f(1.0f, 1.0f, 1.0f);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	for (i=0; i<nstrips; i++) {
 		glDrawArrays(GL_TRIANGLE_STRIP, vc, vcnts[i]);
@@ -353,6 +362,7 @@ draw_wireframe(int32_t nstrips, int32_t wf_vcnts[], vec3_t wf_vtxs[])
 
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
 	glVertexPointer(3, GL_DOUBLE, sizeof(double)*3, &wf_vtxs[0].x);
 	glColor3f(0.0f, 1.0f, 0.0f);
 
@@ -376,6 +386,8 @@ main(int argc, char ** argv)
 	int32_t bpp = 0;
 	int32_t flags = 0;
 	double fovY = 45.0;
+	GLuint tid_sphere;
+	GLuint tid_font;
 
 	if (argc < 2) {
 		fprintf(stderr, "filename required.\n");
@@ -412,8 +424,9 @@ main(int argc, char ** argv)
 	glEnable(GL_TEXTURE_2D);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	
-	LoadTexture(argv[1]);
+
+	tid_sphere = LoadTexture(argv[1]);
+	tid_font   = load_font_image( );
 
 	{
 		vec3_t * vertices;
@@ -511,7 +524,7 @@ main(int argc, char ** argv)
 							pitch = 0.0f;
 							last_yaw = 0.0f;
 							yaw = 0.0f;
-							lens = LENS_EQUISOLID;
+							lens = LENS_EQUIDISTANT;
 							update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
 							fovY = 45.0;
 							set_viewangle(fovY, width, height);
@@ -658,18 +671,21 @@ main(int argc, char ** argv)
 			{
 				Uint32 t = SDL_GetTicks( );
 
+				glEnableClientState(GL_VERTEX_ARRAY);
 				glLoadIdentity( );
 				glTranslatef(0.0f, 0.0f, depth);
 				glRotatef(yaw, 0.0f, 1.0f, 0.0f);
 				glRotatef(pitch, 1.0f, 0.0f, 0.0f);
 
 				if (wireframe) {
-					draw_sphere(nstrips, vcnts, vertices, coords);
+					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 					draw_wireframe(nstrips, wf_vcnts, wf_vtxs);
 				}
 				else {
-					draw_sphere(nstrips, vcnts, vertices, coords);
+					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 				}
+
+				draw_textwindow(tid_font, s_lens_r, s_lens_cx, s_lens_cy);
 			}
 
 			frames++;

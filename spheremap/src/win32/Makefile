@@ -6,7 +6,7 @@ CC = x86_64-w64-mingw32-gcc
 LD = x86_64-w64-mingw32-ld
 OBJCOPY = x86_64-w64-mingw32-objcopy
 
-CFLAGS = `$(SDL_CONFIG) --cflags` -I/usr/local/x86_64-w64-mingw32/include
+CFLAGS = -Wall `$(SDL_CONFIG) --cflags` -I/usr/local/x86_64-w64-mingw32/include
 LDFLAGS = `$(SDL_CONFIG) --libs` -lSDL_image -lopengl32
 
 DEPDIR = ./.deps

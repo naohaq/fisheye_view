@@ -3,7 +3,7 @@
 
 SDL_CONFIG = /usr/bin/sdl-config
 
-CFLAGS  = `$(SDL_CONFIG) --cflags`
+CFLAGS  = -Wall `$(SDL_CONFIG) --cflags`
 LDFLAGS = `$(SDL_CONFIG) --libs` -lSDL_image -lm -lGL
 
 DEPDIR = ./.deps

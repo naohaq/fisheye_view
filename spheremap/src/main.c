@@ -19,45 +19,44 @@
 typedef char char_t;
 
 #include "vector.h"
+#include "lens.h"
 #include "textwin.h"
 
 #ifndef M_PI
 #define M_PI (3.141592653589793238462643)
 #endif
 
-typedef enum {
-	LENS_STEREOGRAPHIC = 0,
-	LENS_EQUIDISTANT,
-	LENS_EQUISOLID,
-} lens_type_t;
-
-static double s_lens_r  = 1024.0;
-static double s_lens_cx = 0.0;
-static double s_lens_cy = 0.0;
-
 extern const uint8_t _binary_resource_asciifont_tga_start[];
 extern const uint8_t _binary_resource_asciifont_tga_end[];
 extern const uint32_t _binary_resource_asciifont_tga_size[];
 
-static lens_type_t
-toggle_lens_type(lens_type_t lens)
+static void
+toggle_lens_type(lens_param_t * lens, int fw)
 {
-	lens_type_t nxt_lens = LENS_EQUISOLID;
-	switch (lens) {
+	lens_type_t nxt_type = LENS_EQUISOLID;
+	switch (lens->type) {
 	case LENS_STEREOGRAPHIC:
-		nxt_lens = LENS_EQUIDISTANT;
+		nxt_type = fw ? LENS_EQUIDISTANT : LENS_MADOKA;
 		break;
 
 	case LENS_EQUIDISTANT:
-		nxt_lens = LENS_EQUISOLID;
+		nxt_type = fw ? LENS_EQUISOLID : LENS_STEREOGRAPHIC;
 		break;
 
 	case LENS_EQUISOLID:
-		nxt_lens = LENS_STEREOGRAPHIC;
+		nxt_type = fw ? LENS_ORTHOGONAL : LENS_EQUIDISTANT;
+		break;
+
+	case LENS_ORTHOGONAL:
+		nxt_type = fw ? LENS_MADOKA : LENS_EQUISOLID;
+		break;
+
+	case LENS_MADOKA:
+		nxt_type = fw ? LENS_STEREOGRAPHIC : LENS_ORTHOGONAL;
 		break;
 	}
 
-	return nxt_lens;
+	lens->type = nxt_type;
 }
 
 
@@ -179,7 +178,7 @@ alloc_vertex_array_wireframe(int32_t ** vcnts, vec3_t ** vertices)
 }
 
 static void
-update_sphere_object(int32_t * nstrips, lens_type_t lens, int32_t cnts[], vec3_t vtxs[], vec2_t crds[])
+update_sphere_object(int32_t * nstrips, const lens_param_t * lens, int32_t cnts[], vec3_t vtxs[], vec2_t crds[])
 {
 	vec3_t vary[2*(NDIV_V+1)];
 	vec2_t cary[2*(NDIV_V+1)];
@@ -194,9 +193,9 @@ update_sphere_object(int32_t * nstrips, lens_type_t lens, int32_t cnts[], vec3_t
 	 *
 	 */
 	double r = 30.0;
-	double cx = 0.5 + s_lens_cx / 1024.0 * 0.5;
-	double cy = 0.5 + s_lens_cy / 1024.0 * 0.5;
-	double t_r = s_lens_r / 1024.0;
+	double cx = 0.5 + lens->center.x / 1024.0 * 0.5;
+	double cy = 0.5 + lens->center.y / 1024.0 * 0.5;
+	double t_r = lens->r / 1024.0;
 	vec2_t center = vec2(cx, cy);
 	
 	int32_t scnt;
@@ -226,22 +225,36 @@ update_sphere_object(int32_t * nstrips, lens_type_t lens, int32_t cnts[], vec3_t
 				vec2_t tcr = vec2(cos(phi)*TEXSCALE_X*t_r, -sin(phi)*TEXSCALE_Y*t_r);
 				vec2_t tc;
 
-				switch (lens) {
-				case LENS_STEREOGRAPHIC:
+				switch (lens->type) {
+				case LENS_STEREOGRAPHIC: {
 					/* stereographic projection */
 					tc = add2d(mult2d(rr*(1.0/(1.0+zn)), tcr), center);
 					break;
+				}
 
-				case LENS_EQUIDISTANT:
+				case LENS_EQUIDISTANT: {
 					/* equidistant projection */
 					tc = add2d(mult2d(1.0-th_r, tcr), center);
 					break;
+				}
 
 				case LENS_EQUISOLID: {
 					/* equisolid projection */
 					double th_i = 0.5*M_PI - theta;
 					double esr = t_r * sin(th_i*0.5) / sin(0.25*M_PI);
 					tc = add2d(mult2d(esr, tcr), center);
+					break;
+				}
+
+				case LENS_ORTHOGONAL: {
+					/* orthogonal projection */
+					tc = add2d(mult2d(rr, tcr), center);
+					break;
+				}
+
+				case LENS_MADOKA: {
+					/* stub */
+					tc = add2d(mult2d(rr, tcr), center);
 					break;
 				}
 				}
@@ -377,7 +390,6 @@ draw_wireframe(int32_t nstrips, int32_t wf_vcnts[], vec3_t wf_vtxs[])
 int
 main(int argc, char ** argv)
 {
-	/* int32_t ret; */
 	SDL_Surface * screen;
 	SDL_Event event;
 	int32_t quit = 0;
@@ -442,7 +454,7 @@ main(int argc, char ** argv)
 		int32_t wireframe = 0;
 		int32_t drag_p = 0;
 		int32_t xorg, yorg;
-		lens_type_t lens = LENS_EQUIDISTANT;
+		lens_param_t lens = {LENS_EQUIDISTANT, 1024.0, {0.0, 0.0}};
 		float last_pitch = 0.0f;
 		float pitch = 0.0f;
 		float last_yaw = 0.0f;
@@ -456,7 +468,7 @@ main(int argc, char ** argv)
 			exit(1);
 		}
 
-		update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+		update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 		update_sphere_wireframe(&nstrips, wf_vcnts, wf_vtxs);
 		
 		while (!quit) {
@@ -526,8 +538,8 @@ main(int argc, char ** argv)
 							pitch = 0.0f;
 							last_yaw = 0.0f;
 							yaw = 0.0f;
-							lens = LENS_EQUIDISTANT;
-							update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+							lens.type = LENS_EQUIDISTANT;
+							update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 							fovY = 45.0;
 							set_viewangle(fovY, width, height);
 						}
@@ -539,9 +551,9 @@ main(int argc, char ** argv)
 						break;
 
 					case SDLK_p: {
-						printf("cx: %f\n", s_lens_cx);
-						printf("cy: %f\n", s_lens_cy);
-						printf("r : %f\n", s_lens_r);
+						printf("cx: %f\n", lens.center.x);
+						printf("cy: %f\n", lens.center.y);
+						printf("r : %f\n", lens.r);
 						break;
 					}
 
@@ -561,45 +573,45 @@ main(int argc, char ** argv)
 
 					case SDLK_h: {
 						if (shift_p) {
-							s_lens_cx -= 5.0;
+							lens.center.x -= 5.0;
 						}
 						else {
-							s_lens_cx -= 1.0;
+							lens.center.x -= 1.0;
 						}
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
 					case SDLK_j: {
 						if (shift_p) {
-							s_lens_cy += 5.0;
+							lens.center.y += 5.0;
 						}
 						else {
-							s_lens_cy += 1.0;
+							lens.center.y += 1.0;
 						}
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
 					case SDLK_k: {
 						if (shift_p) {
-							s_lens_cy -= 5.0;
+							lens.center.y -= 5.0;
 						}
 						else {
-							s_lens_cy -= 1.0;
+							lens.center.y -= 1.0;
 						}
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
 					case SDLK_l: {
 						if (shift_p) {
-							s_lens_cx += 5.0;
+							lens.center.x += 5.0;
 						}
 						else {
-							s_lens_cx += 1.0;
+							lens.center.x += 1.0;
 						}
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
@@ -619,29 +631,34 @@ main(int argc, char ** argv)
 
 					case SDLK_r: {
 						if (shift_p) {
-							s_lens_r -= 5.0;
+							lens.r -= 5.0;
 						}
 						else {
-							s_lens_r -= 1.0;
+							lens.r -= 1.0;
 						}
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
 					case SDLK_e: {
 						if (shift_p) {
-							s_lens_r += 5.0;
+							lens.r += 5.0;
 						}
 						else {
-							s_lens_r += 1.0;
+							lens.r += 1.0;
 						}
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
 					case SDLK_TAB: {
-						lens = toggle_lens_type(lens);
-						update_sphere_object(&nstrips, lens, vcnts, vertices, coords);
+						if (shift_p) {
+							toggle_lens_type(&lens, 0);
+						}
+						else {
+							toggle_lens_type(&lens, 1);
+						}
+						update_sphere_object(&nstrips, &lens, vcnts, vertices, coords);
 						break;
 					}
 
@@ -691,7 +708,7 @@ main(int argc, char ** argv)
 					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 				}
 
-				draw_textwindow(tid_font, s_lens_r, s_lens_cx, s_lens_cy);
+				draw_textwindow(tid_font, &lens);
 			}
 
 			frames++;

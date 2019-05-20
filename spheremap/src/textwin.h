@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 extern GLuint load_font_image( void );
-extern int draw_textwindow(GLuint tid, double lens_r, double lens_cx, double lens_cy);
+extern int draw_textwindow(GLuint tid, const lens_param_t * lens);
 
 #ifdef __cplusplus
 }

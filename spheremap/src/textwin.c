@@ -21,6 +21,7 @@ typedef char char_t;
 
 #include "vector.h"
 
+#include "lens.h"
 #include "textwin.h"
 
 extern const uint8_t  _binary_resource_asciifont_tga_start[];
@@ -31,7 +32,6 @@ GLuint
 load_font_image( void )
 {
 	GLuint tex_num;
-	SDL_Surface * fnt_img;
 	SDL_RWops * ops;
 	int imgsize = _binary_resource_asciifont_tga_end - _binary_resource_asciifont_tga_start;
 
@@ -108,10 +108,36 @@ draw_string(GLfloat x, GLfloat y, const char * str)
 	for (int32_t i=0; str[i] != 0; i+=1) {
 		draw_char(x + ((GLfloat)i)*12.0f, y, str[i]);
 	}
+	return 0;
+}
+
+static const char *
+projection_type_name(lens_type_t t)
+{
+	const char * name = "unknown";
+	switch (t) {
+	case LENS_STEREOGRAPHIC:
+		name = "Stereographic";
+		break;
+	case LENS_EQUIDISTANT:
+		name = "Equidistant";
+		break;
+	case LENS_EQUISOLID:
+		name = "Equisolid";
+		break;
+	case LENS_ORTHOGONAL:
+		name = "Orthogonal";
+		break;
+	case LENS_MADOKA:
+		name = "MADOKA";
+		break;
+	}
+
+	return name;
 }
 
 int
-draw_textwindow(GLuint tid, double lens_r, double lens_cx, double lens_cy)
+draw_textwindow(GLuint tid, const lens_param_t * lens)
 {
 	const GLdouble width  = (GLdouble)800;
 	const GLdouble height = (GLdouble)600;
@@ -149,12 +175,15 @@ draw_textwindow(GLuint tid, double lens_r, double lens_cx, double lens_cy)
 	glBindTexture(GL_TEXTURE_2D, tid);
 	{
 		char_t buf[128];
-		snprintf(buf, 128, "Center: % 6.1f, % 6.1f", lens_cx, lens_cy);
+		snprintf(buf, 128, "Projection: %s\n", projection_type_name(lens->type));
 		buf[127] = 0;
 		draw_string(ox, oy, buf);
-		snprintf(buf, 128, "Radius: %6.1f", lens_r);
+		snprintf(buf, 128, "Center: % 6.1f, % 6.1f", lens->center.x, lens->center.y);
 		buf[127] = 0;
 		draw_string(ox, oy-26.0f, buf);
+		snprintf(buf, 128, "Radius: %6.1f", lens->r);
+		buf[127] = 0;
+		draw_string(ox, oy-26*2.0f, buf);
 	}
 
 	glMatrixMode(GL_PROJECTION);

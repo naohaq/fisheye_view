@@ -217,7 +217,6 @@ update_sphere_object(int32_t * nstrips, lens_type_t lens, int32_t cnts[], vec3_t
 			double zn = sin(theta);
 			double zz = -zn*r;
 			double rr = cos(theta);
-			double sr = rr;
 
 			for (k=0; k<j+1; k++) {
 				double phi = (i*j+k)*2.0*M_PI*(1.0/NDIV_H)*(1.0/j);
@@ -238,10 +237,13 @@ update_sphere_object(int32_t * nstrips, lens_type_t lens, int32_t cnts[], vec3_t
 					tc = add2d(mult2d(1.0-th_r, tcr), center);
 					break;
 
-				case LENS_EQUISOLID:
+				case LENS_EQUISOLID: {
 					/* equisolid projection */
-					tc = add2d(mult2d(sr, tcr), center);
+					double th_i = 0.5*M_PI - theta;
+					double esr = t_r * sin(th_i*0.5) / sin(0.25*M_PI);
+					tc = add2d(mult2d(esr, tcr), center);
 					break;
+				}
 				}
 
 				vary[slot_n*(NDIV_V+1)+k] = vec3(xx, yy, zz);
@@ -375,7 +377,7 @@ draw_wireframe(int32_t nstrips, int32_t wf_vcnts[], vec3_t wf_vtxs[])
 int
 main(int argc, char ** argv)
 {
-	int32_t ret;
+	/* int32_t ret; */
 	SDL_Surface * screen;
 	SDL_Event event;
 	int32_t quit = 0;
@@ -660,6 +662,10 @@ main(int argc, char ** argv)
 							depth = -50.0f;
 						}
 						break;
+
+					default:
+						/* do nothing */
+						break;
 					}
 					break;
 				}
@@ -669,7 +675,7 @@ main(int argc, char ** argv)
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			{
-				Uint32 t = SDL_GetTicks( );
+				/* Uint32 t = SDL_GetTicks( ); */
 
 				glEnableClientState(GL_VERTEX_ARRAY);
 				glLoadIdentity( );

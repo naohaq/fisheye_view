@@ -31,3 +31,5 @@
 *~
 spheremap/src/sphere
 spheremap/src/.deps/
+spheremap/src/win32/.deps/
+spheremap/src/win32/resource/

@@ -444,6 +444,7 @@ main(int argc, char ** argv)
 		int32_t frames = 0;
 		GLfloat depth = 0.0f;
 		int32_t wireframe = 0;
+		int32_t textwin_en = 0;
 		int32_t drag_p = 0;
 		int32_t xorg, yorg;
 		lens_param_t lens = {LENS_EQUIDISTANT, 1024.0, {0.0, 0.0}};
@@ -560,6 +561,11 @@ main(int argc, char ** argv)
 							fovY = 75.0;
 						}
 						set_viewangle(fovY, width, height);
+						break;
+					}
+
+					case SDLK_i: {
+						textwin_en = 1 - textwin_en;
 						break;
 					}
 
@@ -700,7 +706,9 @@ main(int argc, char ** argv)
 					draw_sphere(tid_sphere, nstrips, vcnts, vertices, coords);
 				}
 
-				draw_textwindow(tid_font, &lens);
+				if (textwin_en) {
+					draw_textwindow(tid_font, &lens);
+				}
 			}
 
 			frames++;

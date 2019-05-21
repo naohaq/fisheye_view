@@ -8,7 +8,7 @@ LDFLAGS = `$(SDL_CONFIG) --libs` -lSDL_image -lm -lGL
 
 DEPDIR = ./.deps
 
-COBJS = main.o textwin.o
+COBJS = main.o textwin.o madoka.o
 
 CDEPS = $(patsubst %.o, $(DEPDIR)/%.d, $(COBJS))
 CSRCS = $(patsubst %.o, %.c, $(COBJS))

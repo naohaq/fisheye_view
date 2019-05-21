@@ -20,6 +20,7 @@ typedef char char_t;
 
 #include "vector.h"
 #include "lens.h"
+#include "madoka.h"
 #include "textwin.h"
 
 #ifndef M_PI
@@ -211,11 +212,11 @@ update_sphere_object(int32_t * nstrips, const lens_param_t * lens, int32_t cnts[
 		for (j=1; j<NDIV_V+1; j++) {
 			int32_t slot_n = (j+0)&1;
 			int32_t slot_p = (j+1)&1;
-			double th_r = (NDIV_V-j)*(1.0/NDIV_V);
+			double th_r = j*(1.0/NDIV_V);
 			double theta = th_r*0.5*M_PI;
-			double zn = sin(theta);
+			double zn = cos(theta);
 			double zz = -zn*r;
-			double rr = cos(theta);
+			double rr = sin(theta);
 
 			for (k=0; k<j+1; k++) {
 				double phi = (i*j+k)*2.0*M_PI*(1.0/NDIV_H)*(1.0/j);
@@ -234,14 +235,13 @@ update_sphere_object(int32_t * nstrips, const lens_param_t * lens, int32_t cnts[
 
 				case LENS_EQUIDISTANT: {
 					/* equidistant projection */
-					tc = add2d(mult2d(1.0-th_r, tcr), center);
+					tc = add2d(mult2d(th_r, tcr), center);
 					break;
 				}
 
 				case LENS_EQUISOLID: {
 					/* equisolid projection */
-					double th_i = 0.5*M_PI - theta;
-					double esr = t_r * sin(th_i*0.5) / sin(0.25*M_PI);
+					double esr = sin(theta*0.5) / sin(0.25*M_PI);
 					tc = add2d(mult2d(esr, tcr), center);
 					break;
 				}
@@ -253,8 +253,9 @@ update_sphere_object(int32_t * nstrips, const lens_param_t * lens, int32_t cnts[
 				}
 
 				case LENS_MADOKA: {
-					/* stub */
-					tc = add2d(mult2d(rr, tcr), center);
+					/* MADOKA */
+					double sr = madoka_theta_to_radius(theta);
+					tc = add2d(mult2d(sr, tcr), center);
 					break;
 				}
 				}

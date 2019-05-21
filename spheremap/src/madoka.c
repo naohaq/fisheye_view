@@ -9,14 +9,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-typedef char char_t;
-
+#include "common.h"
 #include "vector.h"
 #include "madoka.h"
-
-#ifndef M_PI
-#define M_PI (3.141592653589793238462643)
-#endif
 
 typedef struct {
 	double x_off;

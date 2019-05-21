@@ -17,10 +17,8 @@
 #include <SDL_image.h>
 #include <GL/gl.h>
 
-typedef char char_t;
-
+#include "common.h"
 #include "vector.h"
-
 #include "lens.h"
 #include "textwin.h"
 

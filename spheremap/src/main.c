@@ -6,7 +6,6 @@
  *
  */
 
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,20 +15,12 @@
 #include <SDL_image.h>
 #include <GL/gl.h>
 
-typedef char char_t;
-
+#include "common.h"
 #include "vector.h"
 #include "lens.h"
 #include "madoka.h"
 #include "textwin.h"
 
-#ifndef M_PI
-#define M_PI (3.141592653589793238462643)
-#endif
-
-extern const uint8_t _binary_resource_asciifont_tga_start[];
-extern const uint8_t _binary_resource_asciifont_tga_end[];
-extern const uint32_t _binary_resource_asciifont_tga_size[];
 
 static void
 toggle_lens_type(lens_param_t * lens, int fw)
